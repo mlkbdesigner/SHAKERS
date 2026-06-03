@@ -86,7 +86,75 @@ function deleteFromInbox(id) {
   return list;
 }
 
+/* ============================================================
+   Camada de API (Vercel) com FALLBACK local.
+   - Quando hospedado na Vercel, usa as rotas /api/* reais.
+   - Em preview estático (sem backend), cai no localStorage,
+     então a interface continua funcionando para demonstração.
+   ============================================================ */
+
+async function apiEnviar(brief) {
+  try {
+    const r = await fetch("/api/enviar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ brief }),
+    });
+    if (r.ok) return { ok: true, mode: "api" };
+    throw new Error("status " + r.status);
+  } catch (e) {
+    // fallback: salva localmente (modo demonstração)
+    saveToInbox({ id: "br-" + Date.now(), ts: new Date().toISOString(), brief });
+    return { ok: true, mode: "local" };
+  }
+}
+
+async function apiLogin(password) {
+  try {
+    const r = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    if (r.ok) return { ok: true, mode: "api" };
+    if (r.status === 401) return { ok: false, mode: "api" };
+    throw new Error("status " + r.status);
+  } catch (e) {
+    // fallback: confere a senha localmente (modo demonstração)
+    return { ok: password === "teamshakers", mode: "local" };
+  }
+}
+
+async function apiBriefings() {
+  try {
+    const r = await fetch("/api/briefings", { headers: { "Accept": "application/json" } });
+    if (r.ok) {
+      const data = await r.json();
+      return { list: Array.isArray(data.briefings) ? data.briefings : [], mode: "api" };
+    }
+    throw new Error("status " + r.status);
+  } catch (e) {
+    return { list: loadInbox(), mode: "local" };
+  }
+}
+
+async function apiExcluir(id) {
+  try {
+    const r = await fetch("/api/excluir", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (r.ok) return { ok: true, mode: "api" };
+    throw new Error("status " + r.status);
+  } catch (e) {
+    deleteFromInbox(id);
+    return { ok: true, mode: "local" };
+  }
+}
+
 Object.assign(window, {
   KEYWORDS, TONES, VALUES, FEEL_WANT, FEEL_AVOID, STYLES, DESIGNER_EMAIL, EMPTY_BRIEF,
   loadInbox, saveToInbox, deleteFromInbox,
+  apiEnviar, apiLogin, apiBriefings, apiExcluir,
 });

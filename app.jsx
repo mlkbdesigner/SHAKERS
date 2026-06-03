@@ -108,17 +108,13 @@ function App() {
   };
 
   const enviar = () => {
-    // No protótipo: salva na caixa local (Painel) e simula o envio.
-    // Na Vercel: POST /api/enviar -> grava no banco + dispara email (Resend) com PDF/JSON.
+    // Envia para /api/enviar (Vercel). Em preview estático, cai no fallback local.
     setSending(true);
-    setTimeout(() => {
-      try {
-        window.saveToInbox({ id: "br-" + Date.now(), ts: new Date().toISOString(), brief });
-      } catch (e) {}
+    window.apiEnviar(brief).then(() => {
       setSending(false);
       setView("sent");
       window.scrollTo(0, 0);
-    }, 1100);
+    });
   };
 
   const reset = (skipConfirm) => {

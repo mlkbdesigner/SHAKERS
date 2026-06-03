@@ -1,0 +1,11 @@
+{
+  "name": "shakers-briefing",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Briefing para Designers — formulário + painel da equipe (Shakers)",
+  "dependencies": {
+    "@vercel/kv": "^2.0.0",
+    "resend": "^4.0.0"
+  }
+}

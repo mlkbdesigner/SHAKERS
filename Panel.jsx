@@ -37,13 +37,38 @@ function InboxCard({ entry, onOpen, onDelete }) {
 }
 
 function Panel({ onOpen, toast }) {
-  const [list, setList] = React.useState(window.loadInbox());
+  const [list, setList] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let alive = true;
+    window.apiBriefings().then((res) => {
+      if (!alive) return;
+      setList(res.list);
+      setLoading(false);
+    });
+    return () => { alive = false; };
+  }, []);
 
   const del = (id) => {
     if (!window.confirm("Excluir este briefing do painel?")) return;
-    setList(window.deleteFromInbox(id));
-    toast("Briefing excluído");
+    window.apiExcluir(id).then(() => {
+      setList((prev) => prev.filter((x) => x.id !== id));
+      toast("Briefing excluído");
+    });
   };
+
+  if (loading) {
+    return (
+      <div className="view">
+        <div className="lead">
+          <div className="eyebrow">Painel da equipe</div>
+          <h1 className="display">Briefings <em>recebidos</em></h1>
+        </div>
+        <div className="inbox-empty"><div className="inbox-empty-ico">⏳</div><p>Carregando…</p></div>
+      </div>
+    );
+  }
 
   return (
     <div className="view">
@@ -79,14 +104,20 @@ function Panel({ onOpen, toast }) {
 function PanelAuth({ onUnlock }) {
   const [pwd, setPwd] = React.useState("");
   const [err, setErr] = React.useState(false);
+  const [checking, setChecking] = React.useState(false);
   const submit = (e) => {
     if (e) e.preventDefault();
-    if (pwd === "teamshakers") {
-      try { sessionStorage.setItem("painel-auth", "1"); } catch (x) {}
-      onUnlock();
-    } else {
-      setErr(true);
-    }
+    if (checking) return;
+    setChecking(true);
+    window.apiLogin(pwd).then((res) => {
+      setChecking(false);
+      if (res.ok) {
+        try { sessionStorage.setItem("painel-auth", "1"); } catch (x) {}
+        onUnlock();
+      } else {
+        setErr(true);
+      }
+    });
   };
   return (
     <div className="view">
@@ -104,7 +135,7 @@ function PanelAuth({ onUnlock }) {
             placeholder="Senha de acesso"
             onChange={(e) => { setPwd(e.target.value); setErr(false); }}
           />
-          <button className="btn btn-primary" type="submit">Entrar</button>
+          <button className="btn btn-primary" type="submit" disabled={checking}>{checking ? "…" : "Entrar"}</button>
         </form>
         {err ? <p className="auth-err">Senha incorreta. Tente novamente.</p> : null}
       </div>
