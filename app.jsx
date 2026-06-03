@@ -82,9 +82,8 @@ function SentScreen({ onReset }) {
 }
 
 function App() {
-  const saved = loadState();
   const [view, setView] = React.useState("form"); // form | sent | panel | detail
-  const [brief, setBrief] = React.useState({ ...window.EMPTY_BRIEF, ...(saved?.brief || {}) });
+  const [brief, setBrief] = React.useState(window.EMPTY_BRIEF);
   const [sending, setSending] = React.useState(false);
   const [viewing, setViewing] = React.useState(null);
   const [panelAuthed, setPanelAuthed] = React.useState(() => {
@@ -92,11 +91,6 @@ function App() {
   });
   const [toastMsg, setToastMsg] = React.useState("");
   const toastTimer = React.useRef(null);
-
-  // persiste só o rascunho do formulário
-  React.useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ brief })); } catch (e) {}
-  }, [brief]);
 
   const update = (patch) => setBrief((b) => ({ ...b, ...patch }));
   const progress = computeProgress(brief);
